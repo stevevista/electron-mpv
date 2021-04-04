@@ -1,0 +1,114 @@
+@mixin player-buttons-style {
+  height: 38px;
+  position: absolute;
+  bottom: 0;
+
+  &.player-icons-left {
+    .player-icon {
+      padding: 0px;
+    }
+  }
+  &.player-icons-right {
+    right: 20px;
+    .player-icon {
+      padding: 0px;
+    }
+  }
+
+  .player-icon {
+    width: 40px;
+    height: 100%;
+    border: none;
+    background-color: transparent;
+    outline: none;
+    cursor: pointer;
+    vertical-align: middle;
+    box-sizing: border-box;
+    .player-icon-content {
+        transition: all .2s ease-in-out;
+        opacity: .8;
+    }
+    &:hover {
+        .player-icon-content {
+            opacity: 1;
+        }
+    }
+    &.player-setting-icon {
+      padding-top: 8.5px;
+    }
+  }
+
+  .player-time {
+    line-height: 38px;
+    color: #eee;
+    text-shadow: 0 0 2px rgba(0, 0, 0, .5);
+    vertical-align: middle;
+    font-size: 13px;
+    cursor: default;
+  }
+}
+
+@mixin player-info-panel-style {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 400px;
+  background: rgba(28, 28, 28, 0.6);
+  padding: 10px;
+  color: #fff;
+  font-size: 12px;
+  border-radius: 2px;
+
+  .xplayer-info-panel-close {
+    cursor: pointer;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+  }
+
+  .xplayer-info-panel-item {
+    & > span {
+        display: inline-block;
+        vertical-align: middle;
+        line-height: 15px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+  }
+
+  .xplayer-info-panel-item-title {
+    width: 100px;
+    text-align: right;
+    margin-right: 10px;
+  }
+
+  .xplayer-info-panel-item-data {
+      width: 260px;
+  }
+}
+
+$max-count: 10;
+
+.menu-buttons {
+  display: inline-block;
+  height: 100%;
+  position: relative;
+  &:hover {
+    @for $i from 2 through $max-count {
+      button:nth-child(#{$i}) {
+        display: block;
+        background-color:#212121;
+      }
+    }
+  }
+
+  @for $i from 2 through $max-count {
+    button:nth-child(#{$i}) {
+      position: absolute;
+      z-index: 1;
+      display: none;
+      top: -$i*30px + 30px;
+    }
+  }
+}

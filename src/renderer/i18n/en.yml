@@ -1,0 +1,97 @@
+settings: Settings
+player_settings: Player settings
+folder: Folder
+name: Name
+done: Done
+remove: Remove
+cancel: Cancel
+player: Player
+common:
+  ok: OK
+  close: Close
+  cancel: Cancel
+  openFile: Open File
+  play: Play
+  suspend: Suspend
+  setting: Setting
+  fileInfo: Infomation
+  authorization: Authorization
+video:
+  info: Infomation
+  stop: Stop
+  video: Video
+  ext_clock: Extern Clock
+  Speed: Speed
+  Normal: Normal
+  load_fail: Load fail
+  quality: Quality
+  FF: FF
+  REW: REW
+  Setting: Setting
+  Full_screen: Full screen
+  s: s
+  detection: AI Detection
+  speed: Speed
+  autoHideControl: Auto hide controller
+  snapshot: Screenshot
+  snapshot_working: Stop screenshot
+  openUrl: Open URL
+  openDir: Open Directory
+  playControl: Play Control
+  settings:
+    snapshot_format: Snapshot saving format
+    snapshot_dir: Snapshot Saving To
+    streaming_transport: Streaming transport
+    disable_audio: Disable Audio
+    shot_with_detection: Include Detection
+  play_list:
+    remove: Remove
+    removeAll: Remove All
+    add: Add
+  goto: Goto
+  zoom_reset: Cancel Zoomin
+  zoom: ZoomIn
+  source_path: URL
+  format: Format
+  source_size: Size
+  resolution: Resolution
+  fps: fps
+  drops: Drop Frames
+  duration: Duration
+  repeat: Repeat List
+  repeat-once: Repeat Single
+  repeat-off: Repeat Off
+  playlist-music: Auto play next
+  snapshot_mode: Snapshot Mode
+  shot_by_time: By Interval(ms)
+  shot_by_frame: By Frame
+  max_count: Max count
+  shot_each: Screenshot each frame
+  hwaccel: Hardware Acceleration
+  frame_id: Frame ID
+ai:
+  switch: AI Switch
+  pedestrian: Pedestrian
+  face: Face
+  face_rec: Face Recognize
+  vehicle: Vehicle
+  plate: Plate
+audio: Audio
+volume: Volume
+prev_frame: Previous Frame
+next_frame: Next Frame
+nodelay: Low latency
+play-control: Play Control
+transport: Transport
+video-sync: Video
+sync-type: Sync Type
+debug_report: Output Debug log
+language: Language
+theme: Theme
+auto: Auto
+light: Light
+dark: Dark
+search: Search
+open: Open
+log_loc: Logs location
+equalizer: Equalizer

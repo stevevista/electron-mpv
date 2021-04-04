@@ -1,0 +1,184 @@
+language: c
+
+_macbase:
+  - &mac
+    os: osx
+    compiler: clang
+    env:
+      - HOMEBREW_NO_AUTO_UPDATE=1
+      - HOMEBREW_NO_INSTALL_CLEANUP=1
+    before_cache:
+      - brew cleanup -s
+    cache:
+      directories:
+        - $HOME/Library/Caches/Homebrew
+        - /usr/local/Homebrew
+
+_mingwbase:
+  - &mingw
+    os: linux
+    addons:
+      apt:
+        packages:
+          - 'autoconf'
+          - 'automake'
+          - 'pkg-config'
+          - 'gcc-mingw-w64'
+          - 'gcc-multilib'
+          - 'nasm'
+          - 'yasm'
+    cache:
+      directories:
+        - mingw_prefix/
+
+matrix:
+  include:
+    - <<: *mac
+      osx_image: xcode12.2
+    - <<: *mac
+      osx_image: xcode11.3
+    - <<: *mac
+      osx_image: xcode9.4
+      env:
+        - HOMEBREW_NO_AUTO_UPDATE=1
+        - HOMEBREW_NO_INSTALL_CLEANUP=1
+        - CI_HOMEBREW_HASH=7242872d7878f1a4c2706e5837faafcf0782b58d
+    - os: freebsd
+      compiler: clang
+    - os: linux
+      compiler: gcc
+      env: CONTAINER=registry.cirno.systems/kiwi/containers/mpv-ci:stable-deps CI_SCRIPT=ci/build-tumbleweed.sh
+    - os: linux
+      compiler: clang
+      env: CONTAINER=registry.cirno.systems/kiwi/containers/mpv-ci:stable-deps CI_SCRIPT=ci/build-tumbleweed.sh
+    - <<: *mingw
+      env: CI_SCRIPT=ci/build-mingw64.sh TARGET=i686-w64-mingw32
+    - <<: *mingw
+      env: CI_SCRIPT=ci/build-mingw64.sh TARGET=x86_64-w64-mingw32
+  allow_failures:
+    - os: osx
+      osx_image: xcode9.4
+  fast_finish: true
+
+dist: focal
+services:
+  - docker
+
+env:
+  global:
+    # Coverity token
+    - secure: "H21mSRlMhk4BKS0xHZvCFGJxteCP0hRVUxTuNfM2Z9HBsyutuLEYMtViLO86VtM+Tqla3xXPzUdS4ozLwI72Ax/5ZUDXACROj73yW6QhFB5D6rLut12+FjqC7M33Qv2hl0xwgNBmR5dsm1ToP37+Wn+ecJQNvN8fkTXF+HVzOEw="
+    # Travis token for mpv.io
+    - secure: "nlTVLJK6kRhtXvhKCoJ3YdFGHuKaq/eHowfPw25hqRWuBOZd+HjHY5KIYjV7SxuKFDpJE4GpNcvA3Q31nsqomxpkLYgrwjg6TSazN7ZP+x85ZgV1QGFebrPfGm2n5UR5CAPAwFoeF3pZheLi4bajVzwq1fWW+x3grS188P9OZso="
+
+branches:
+  only:
+    - master
+    - ci
+    - coverity_scan
+    - /release\/.*$/
+
+before_install:
+  - if [ "$TRAVIS_COMPILER" = "clang" ]; then export CXX="clang++"; fi
+  - if [ "$TRAVIS_COMPILER" = "gcc" ]; then export CXX="g++"; fi
+  - if [ -n "$CONTAINER" ]; then docker pull $CONTAINER; fi
+  - |
+        if [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+            # Requested in ci/build-freebsd.sh
+            sudo pkg install -y \
+                evdev-proto \
+                ffmpeg \
+                libplacebo \
+                libxkbcommon \
+                luajit \
+                openal-soft \
+                pkgconf \
+                python3 \
+                sdl2 \
+                vulkan-headers \
+                wayland-protocols \
+                $NULL
+            # Optionally auto-enabled
+            sudo pkg install -y \
+                alsa-lib \
+                jackit \
+                libXv \
+                libarchive \
+                libbluray \
+                libcaca \
+                libcdio-paranoia \
+                libdvdnav \
+                mujs \
+                pulseaudio \
+                rubberband \
+                sekrit-twc-zimg \
+                uchardet \
+                v4l_compat \
+                $NULL
+        fi
+  - |
+        if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+            if [[ "$TRAVIS_OSX_IMAGE" == "xcode12.2" ]]; then
+                remove=$(brew list --formula)
+            else
+                remove=$(brew list)
+            fi
+            keep="gettext pcre2 git"
+            install="autoconf automake pkg-config libtool python freetype fribidi little-cms2 luajit libass ffmpeg"
+            for formula in ${keep[@]}; do remove=("${remove[@]/$formula}"); done
+            for formula in ${install[@]}; do remove=("${remove[@]/$formula}"); done
+            brew remove --force $remove --ignore-dependencies
+            if [[ "$TRAVIS_OSX_IMAGE" == "xcode12.2" ]]; then
+                brew remove $(brew list --cask)
+            else
+                brew cask remove $(brew cask list)
+            fi
+            brew untap homebrew/cask
+            brew update
+            if [[ -n "$CI_HOMEBREW_HASH" ]]; then
+                pushd "/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core"
+                git checkout --force $CI_HOMEBREW_HASH
+            fi
+            brew install $install
+            brew link --overwrite python
+            if [[ -n "$CI_HOMEBREW_HASH" ]]; then
+                git checkout master
+                popd
+            fi
+        fi
+
+
+
+script:
+  - ./bootstrap.py
+  - |
+        if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+            if [ -n "$CONTAINER" ]; then
+                docker run --env CC --env TARGET -v $TRAVIS_BUILD_DIR:/build $CONTAINER /bin/sh -c "cd /build && $CI_SCRIPT"
+            else
+                $CI_SCRIPT
+            fi
+        fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./ci/build-macos.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "freebsd" ]; then ./ci/build-freebsd.sh; fi
+after_failure: cat ./build/config.log
+after_script: TOOLS/travis-rebuild-website
+
+notifications:
+  email: false
+  irc:
+    if: fork = false
+    channels:
+      - "irc.freenode.org#mpv-devel"
+    on_success: change
+    on_failure: always
+
+addons:
+  coverity_scan:
+    project:
+      name: "mpv-player/mpv"
+      description: "Build submitted via Travis CI"
+    notification_email: mpv-team@googlegroups.com
+    build_command_prepend: "./bootstrap.py && ./waf configure"
+    build_command:   "./waf build"
+    branch_pattern: coverity_scan

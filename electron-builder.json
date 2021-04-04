@@ -1,0 +1,52 @@
+{
+  "appId": "com.app.electron-mpv",
+  "productName": "electron-mpv",
+  "asar": true,
+  "directories": {
+    "output": "dist",
+    "buildResources": "static/icons"
+  },
+  "files": [
+    "build/**/*",
+    "package.json",
+    "licenses/**/*"
+  ],
+  "extraFiles": [
+    "*.dll",
+    "*.weights",
+    "licenses/**/*"
+  ],
+  "linux": {
+    "category": "Network",
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["ia32", "x64"]
+      },
+      {
+        "target": "deb",
+        "arch": ["ia32", "x64"]
+      }
+    ]
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "mac": {
+    "category": "public.app-category.navigation"
+  },
+  "nsis": {
+    "artifactName": "${productName} Setup ${version}-x64-unlicensed.${ext}",
+    "perMachine": false,
+    "allowElevation": false,
+    "packElevateHelper": false
+  },
+  "portable": {
+    "artifactName": "${productName}-x64.${ext}"
+  }
+}

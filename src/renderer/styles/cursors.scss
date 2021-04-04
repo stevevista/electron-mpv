@@ -1,0 +1,7 @@
+@import './transparency.scss';
+
+@mixin colored-cursor($cursorColor, $color: 0) {
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0px 0px 0px rgba($color, $color, $color, $transparency-text-high);
+  color: $cursorColor;
+}

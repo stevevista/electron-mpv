@@ -1,0 +1,111 @@
+@import './design.scss';
+
+$themes: (
+  light: (
+    titlebar-backgroundColor: #cecece,
+    addressbar-backgroundColor: #fff,
+    addressbar-textColor: #000,
+    toolbar-backgroundColor: #f8f8f8,
+    toolbar-separator-color: rgba(0, 0, 0, 0.12),
+    toolbar-bottomLine-backgroundColor: rgba(0, 0, 0, 0.12),
+    tab-textColor: rgba(0, 0, 0, 0.7),
+    tab-selected-textColor: #000,
+    control-backgroundColor: rgba(0, 0, 0, 0.08),
+    control-hover-backgroundColor: rgba(0, 0, 0, 0.1),
+    control-valueColor: #000,
+    switch-backgroundColor: rgba(0, 0, 0, 0.16),
+    dialog-backgroundColor: #fff,
+    dialog-textColor: #000,
+    dialog-separator-color: rgba(0, 0, 0, 0.12),
+    searchBox-backgroundColor: #fff,
+    dropdown-backgroundColor: #fff,
+    dropdown-backgroundColor-translucent: rgba(255, 255, 255, 0.7),
+    dropdown-separator-color: rgba(0, 0, 0, 0.12),
+    pages-navigationDrawer1-backgroundColor: #f5f5f5,
+    pages-navigationDrawer2-backgroundColor: #fafafa,
+  ),
+  dark: (
+    titlebar-backgroundColor: #1c1c1c,
+    addressbar-backgroundColor: #262626,
+    addressbar-textColor: #fff,
+    toolbar-backgroundColor: #333333,
+    toolbar-separator-color: rgba(255, 255, 255, 0.12),
+    toolbar-bottomLine-backgroundColor: rgba(255, 255, 255, 0.08),
+    tab-textColor: rgba(255, 255, 255, 0.54),
+    tab-selected-textColor: #fff,
+    control-backgroundColor: rgba(255, 255, 255, 0.1),
+    control-hover-backgroundColor: rgba(255, 255, 255, 0.12),
+    control-valueColor: #fff,
+    switch-backgroundColor: rgba(255, 255, 255, 0.24),
+    dialog-backgroundColor: #383838,
+    dialog-textColor: #fff,
+    dialog-separator-color: rgba(255, 255, 255, 0.12),
+    searchBox-backgroundColor: #262626,
+    dropdown-backgroundColor: rgb(66, 66, 66),
+    dropdown-backgroundColor-translucent: rgba(60, 60, 60, 0.6),
+    dropdown-separator-color: rgba(255, 255, 255, 0.12),
+    pages-navigationDrawer1-backgroundColor: rgba(255, 255, 255, 0.1),
+    pages-navigationDrawer2-backgroundColor: rgba(255, 255, 255, 0.05),
+  )
+);
+
+@mixin themeify {
+  @each $theme-name, $theme-map in $themes {
+    $theme-map: $theme-map !global;
+    [data-theme="#{$theme-name}"] & {
+      @content;
+    }
+  }
+}
+
+@function themed($key) {
+  @return map-get($theme-map, $key);
+}
+
+@function themed-by($key, $theme) {
+  @return map-get(map-get($themes, $theme), $key);
+}
+
+@function layouted($key) {
+  @return map-get($layout-map, $key);
+}
+
+@mixin -color($color) {
+  @include themeify {
+    color: themed($color) !important;
+  }
+}
+
+@mixin --color($map) {
+  @each $theme-name, $theme-val in $map {
+    [data-theme="#{$theme-name}"] & {
+      color: $theme-val !important;
+    }
+  }
+}
+
+@mixin -background-color($color) {
+  @include themeify {
+    background-color: themed($color) !important;
+  }
+}
+
+@mixin --background-color($map) {
+  @each $theme-name, $theme-val in $map {
+    [data-theme="#{$theme-name}"] & {
+      background-color: $theme-val !important;
+    }
+  }
+}
+
+@mixin --filter($map) {
+  @each $theme-name, $theme-val in $map {
+    [data-theme="#{$theme-name}"] & {
+      filter: $theme-val !important;
+    }
+  }
+}
+
+@mixin --filter-invert-on-dark {
+  @include --filter((light: none, dark: invert(100%)));
+}

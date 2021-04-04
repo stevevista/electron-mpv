@@ -1,0 +1,21 @@
+@import './typography.scss';
+@import '~@fontsource/roboto/scss/mixins';
+
+body {
+  user-select: none;
+  cursor: default;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  @include body2;
+}
+
+@include fontFace($weight: 400);
+@include fontFace($weight: 500);
+@include fontFace($weight: 300);
+
+* {
+  box-sizing: border-box;
+}

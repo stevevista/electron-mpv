@@ -1,0 +1,40 @@
+.pages-content {
+  height: 100vh;
+  flex: 1;
+  overflow: auto;
+}
+
+.pages-left-content {
+  position: relative;
+  margin: 64px;
+  max-width: 1024px;
+}
+
+@mixin pages-container($darken) {
+  display: flex;
+  overflow: auto;
+  height: 100vh;
+  overflow: hidden;
+
+  &:after {
+    @if $darken {
+      opacity: 0.54;
+      pointer-events: inherit;
+    } @else {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  &:after {
+    content: '';
+    position: fixed;
+    z-index: 99;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: black;
+    transition: 0.2s opacity;
+  }
+}

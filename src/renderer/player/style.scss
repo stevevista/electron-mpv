@@ -1,0 +1,52 @@
+// override materialdesignicons.css
+// to omit other font types
+
+@import "~@mdi/font/scss/variables";
+@import "~@mdi/font/scss/functions";
+// @import "~@mdi/font/scss/path";
+
+@font-face {
+  font-family: '#{$mdi-font-name}';
+  src: url('~@mdi/font/fonts/#{$mdi-filename}-webfont.woff2?v=#{$mdi-version}') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@import "~@mdi/font/scss/core";
+@import "~@mdi/font/scss/icons";
+@import "~@mdi/font/scss/extras";
+@import "~@mdi/font/scss/animated";
+
+// global style
+html {
+  overflow: hidden;
+}
+
+/* slim scrollbar style */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ddd;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  user-select:none;
+}

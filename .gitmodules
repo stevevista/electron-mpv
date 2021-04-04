@@ -1,0 +1,3 @@
+[submodule "src/nacl-mpv-plugin/src/mpv"]
+	path = src/nacl-mpv-plugin/src/mpv
+	url = https://github.com/mpv-player/mpv.git
