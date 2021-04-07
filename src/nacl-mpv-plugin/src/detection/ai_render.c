@@ -188,25 +188,6 @@ static const char *get_coco_classname(int class_id, int locale) {
   return locale == 1 ?  coco_names_zhcn[class_id] : coco_names[class_id];
 }
 
-static void i18n_age(char *out, uint8_t age, int locale) {
-  if (locale == 1)
-    sprintf(out, "%d\xe5\xb2\x81", age);
-  else
-    sprintf(out, "Age %d", age);
-}
-
-static void i18n_face_db(char *out, int32_t db_id, int locale) {
-  if (db_id > 0) {
-    sprintf(out, "ID %d", db_id);
-  } else {
-    if (locale == 1) {
-      sprintf(out, "\xe9\x99\x8c\xe7\x94\x9f\xe4\xba\xba");
-    } else {
-      sprintf(out, "Stranger");
-    }
-  }
-}
-
 static const float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
 
 static float get_color(int c, int x, int max)
@@ -231,70 +212,8 @@ static void get_coco_classcolor(int class_id, uint8_t *R, uint8_t *G, uint8_t *B
   *B = blue * 255;
 }
 
-
-struct ai_renderer_priv {
-  struct ass_library *library;
-  struct ass_renderer *renderer;
-  struct ass_track *track;
-
-  int default_style;
-  int locale;
-};
-
-#define MP_ASS_RGBA(r, g, b, a) \
-    (((unsigned)(r) << 24) | ((g) << 16) | ((b) << 8) | (0xFF - (a)))
-
-
-static int ai_ass_add_style(ASS_Track *track, const char* name, const char* override_font) {
-  int sid = ass_alloc_style(track);
-  ASS_Style *style = track->styles + sid;
-
-  style->Name = _strdup(name);
-  if (override_font) {
-    if (!style->FontName || strcmp(style->FontName, override_font) != 0) {
-      free(style->FontName);
-      style->FontName = _strdup(override_font);
-    }
-  }
-
-  style->FontSize = 20;
-  style->PrimaryColour = MP_ASS_RGBA(0, 0, 0, 255);
-  style->SecondaryColour = style->PrimaryColour;
-  style->OutlineColour = MP_ASS_RGBA(0, 0, 0, 255);
-  style->BackColour = MP_ASS_RGBA(0, 0, 0, 0);
-  style->BorderStyle = 4; // opaque box
-  style->Outline = 0;
-  style->Shadow = 1;
-  style->Spacing = 0;
-  style->MarginL = 0;
-  style->MarginR = 0;
-  style->MarginV = 0;
-  style->ScaleX = 1.;
-  style->ScaleY = 1.;
-  style->Alignment = 5;
-#ifdef ASS_JUSTIFY_LEFT
-  style->Justify = 0;
-#endif
-  style->Blur = 0;
-  style->Bold = 0;
-  style->Italic = 0;
-
-  return sid;
-}
-
-static void ai_ass_add_eventf(ai_renderer ctx, ASS_Track *track, uint32_t label,
-                                    long long start, long long duration,
-                                    const char *fmt, ...) {
-
+static char *formatf_alloc(const char *fmt, ...) {
   va_list ap;
-
-  int n = ass_alloc_event(track);
-  ASS_Event *event = track->events + n;
-  event->Start = start;
-  event->Duration = duration;
-  event->Style = ctx->default_style;
-  
-
   va_start(ap, fmt);
 
   size_t len = strlen(fmt);
@@ -310,118 +229,16 @@ static void ai_ass_add_eventf(ai_renderer ctx, ASS_Track *track, uint32_t label,
     nres = vsnprintf(line, len, fmt, ap);
   }
 
-  event->Text = line;
-
   va_end(ap);
+  return line;
 }
 
-ai_renderer ai_renderer_init() {
-  ai_renderer priv = malloc(sizeof(struct ai_renderer_priv));
-  memset(priv, 0, sizeof(struct ai_renderer_priv));
-
-  priv->library = ass_library_init();
-  priv->renderer = ass_renderer_init(priv->library);
-  priv->track = ass_new_track(priv->library);
-  priv->track->track_type = TRACK_TYPE_ASS;
-
-  ai_ass_add_style(priv->track, "Default", "Courier New");
-  priv->default_style = ai_ass_add_style(priv->track, "face", "Courier New");
-
-  ass_set_fonts(priv->renderer, NULL, "Courier New", ASS_FONTPROVIDER_AUTODETECT, NULL, 1);
-
-  // default
-  ai_renderer_set_res(priv, 1024, 768);
-
-  return priv;
-}
-
-void ai_renderer_free(ai_renderer priv) {
-  if (priv) {
-    ass_free_track(priv->track);
-    ass_renderer_done(priv->renderer);
-    ass_library_done(priv->library);
-    free(priv);
-  }
-}
-
-void ai_renderer_set_locale(ai_renderer ctx, int locale) {
-  if (ctx && ctx->locale != locale) {
-    ctx->locale = locale;
-  }
-}
-
-void ai_renderer_set_res(ai_renderer priv, int w, int h) {
-  if (priv && priv->track) {
-    priv->track->PlayResX = w;
-    priv->track->PlayResY = h;
-  }
-}
-
-void ai_renderer_flush_events(ai_renderer priv) {
-  if (priv && priv->track) {
-    ass_flush_events(priv->track);
-  }
-}
-
-static void ass_flush_old_events(ASS_Track *track, long long ts)
-{
-    int n = 0;
-    for (; n < track->n_events; n++) {
-        if ((track->events[n].Start + track->events[n].Duration) >= ts)
-            break;
-        ass_free_event(track, n);
-        track->n_events--;
-    }
-    for (int i = 0; n > 0 && i < track->n_events; i++) {
-        track->events[i] = track->events[i+n];
-    }
-}
-
-ASS_Image *ai_renderer_render_ass_image(
-    ai_renderer priv,
-    int width,
-    int height,
-    int ml, int mt, int mr, int mb,
-    long long ts, int *detect_change) {
-  if (!priv || !priv->renderer || !priv->track)
-    return NULL;
-
-  struct ass_track *track = priv->track;
-
-  int dispW = width - ml - mr;
-  int dispH = height - mt - mb;
-  double dispScale = (double)dispW / dispH;
-  double resScale = (double)track->PlayResX / track->PlayResY;
-  double scalex = dispScale/resScale;
-
-  // enable/disable output by scaling
-  ASS_Style *style = track->styles + priv->default_style;
-  style->ScaleX = scalex;
-  style->ScaleY = 1;
-
-  ass_set_frame_size(priv->renderer, width, height);
-  ass_set_margins(priv->renderer, mt, mb, ml, mr);
-
-  if (ts > 0)
-    ass_flush_old_events(track, ts);
-
-  return ass_render_frame(priv->renderer, track, ts, detect_change);
-}
-
-static const char* get_frame_color(int label) {
-  if (label == 1) {
-    return "00FF00";
-  } else if (label == 2) {
-    return "FFFF00";
-  } else {
-    return "FF";
-  }
-}
-
-int ai_render_generate_events(
-  ai_renderer ctx,
-  ai_detection_t* det,
-  long long start, long long duration) {
+int ai_render_detection_to_ass_lines(
+  int resX,
+  int resY,
+  int locale,
+  const ai_detection_t* det,
+  char *lines[], int max_count) {
 
   bool validArea = det->bottom > det->top && det->right > det->left;
   if (!validArea) {
@@ -429,90 +246,75 @@ int ai_render_generate_events(
     return 0;
   }
 
-  int resX = ctx->track->PlayResX;
-  int resY = ctx->track->PlayResY;
-
   int X0 = det->left * resX;
   int Y0 = det->top * resY;
   const int X1 = det->right * resX;
   const int Y1 = det->bottom * resY;
   if (Y0 < 0) Y0 = 0;
   if (X0 < 0) X0 = 0;
-  const int boarder = (resX + 1024) / 1024;
+  const int border = (resX + 1024 - 1) / 1024;
+  const int delta = 4;
   const int W = X1 - X0;
   const int H = Y1 - Y0;
   const int Wd = W / 4;
   const int Hd = H / 4;
 
-  const char* color = get_frame_color(det->label);
-
   char color_buf[10];
+  int class_id = det->label;
+  uint8_t R, G, B;
+  get_coco_classcolor(class_id, &R, &G, &B);
+  sprintf(color_buf, "%02X%02X%02X", B, G, R);
+  const char *color = &color_buf[0];
+  const char* label_text = get_coco_classname(class_id, locale);
+  bool bold = false;
 
-    int class_id = det->label;
-    uint8_t R, G, B;
-    get_coco_classcolor(class_id, &R, &G, &B);
-    sprintf(color_buf, "%02X%02X%02X", B, G, R);
-    color = &color_buf[0];
-    const char *label_text = get_coco_classname(class_id, ctx->locale);
-    bool bold = false;
-
+  int count = 0;
 
   // left-top
-  ai_ass_add_eventf(ctx, ctx->track, det->label, start, duration,
-      "{\\3c&H%s&\\3a&H55&\\1a&HFF&\\bord%d}{\\pos(0,0)\\clip(%d,%d,%d,%d)}{\\p1} m %d %d l %d %d %d %d %d %d{\\p0}",
+  if (count >= max_count) return count;
+  lines[count++] = formatf_alloc(
+      "0,0,AIRender,,0,0,0,,{\\3c&H%s&\\3a&H55&\\1a&HFF&\\bord%d}{\\pos(0,0)\\clip(%d,%d,%d,%d)}{\\p1} m %d %d l %d %d %d %d %d %d{\\p0}",
       color,
-      boarder,
-      X0 - (boarder+2), Y0 - (boarder+2), X0 + Wd, Y0 + Hd,
-      X0, Y0, X0 + (Wd+2), Y0, X0 + (Wd+2), Y0 + (Hd+2), X0, Y0 + (Hd+2));
+      border,
+      X0 - (border+delta), Y0 - (border+delta), X0 + Wd, Y0 + Hd,
+      X0, Y0, X0 + (Wd+delta), Y0, X0 + (Wd+delta), Y0 + (Hd+delta), X0, Y0 + (Hd+delta));
 
   // right-top
-  ai_ass_add_eventf(ctx, ctx->track, det->label, start, duration,
-      "{\\3c&H%s&\\3a&H55&\\1a&HFF&\\bord%d}{\\pos(0,0)\\clip(%d,%d,%d,%d)}{\\p1} m %d %d l %d %d %d %d %d %d{\\p0}", 
+  if (count >= max_count) return count;
+  lines[count++] = formatf_alloc(
+      "0,0,AIRender,,0,0,0,,{\\3c&H%s&\\3a&H55&\\1a&HFF&\\bord%d}{\\pos(0,0)\\clip(%d,%d,%d,%d)}{\\p1} m %d %d l %d %d %d %d %d %d{\\p0}", 
       color,
-      2,//boarder,
-      X1 - Wd, Y0 - (boarder+2), X1 + (boarder+2),  Y0 + Hd,
-      X1 - (Wd+2), Y0, X1, Y0, X1, Y0 + (Hd+2), X1 - (Wd+2), Y0 + (Hd+2));
+      border,
+      X1 - Wd, Y0 - (border+delta), X1 + (border+delta),  Y0 + Hd,
+      X1 - (Wd+delta), Y0, X1, Y0, X1, Y0 + (Hd+delta), X1 - (Wd+delta), Y0 + (Hd+delta));
 
   // right-bottom
-  ai_ass_add_eventf(ctx, ctx->track, det->label, start, duration,
-      "{\\3c&H%s&\\3a&H55&\\1a&HFF&\\bord%d}{\\pos(0,0)\\clip(%d,%d,%d,%d)}{\\p1} m %d %d l %d %d %d %d %d %d{\\p0}", 
+  if (count >= max_count) return count;
+  lines[count++] = formatf_alloc(
+      "0,0,AIRender,,0,0,0,,{\\3c&H%s&\\3a&H55&\\1a&HFF&\\bord%d}{\\pos(0,0)\\clip(%d,%d,%d,%d)}{\\p1} m %d %d l %d %d %d %d %d %d{\\p0}", 
       color,
-      2,//boarder,
-      X1 - Wd, Y1 - Hd, X1 + (boarder+2),  Y1 + (boarder+2),
-      X1 - (Wd+2), Y1 - (Hd+2), X1, Y1 - (Hd+2), X1, Y1, X1 - (Wd+2), Y1);
+      border,
+      X1 - Wd, Y1 - Hd, X1 + (border+delta),  Y1 + (border+delta),
+      X1 - (Wd+delta), Y1 - (Hd+delta), X1, Y1 - (Hd+delta), X1, Y1, X1 - (Wd+delta), Y1);
 
   // left-bottom
-  ai_ass_add_eventf(ctx, ctx->track, det->label, start, duration,
-      "{\\3c&H%s&\\3a&H55&\\1a&HFF&\\bord%d}{\\pos(0,0)\\clip(%d,%d,%d,%d)}{\\p1} m %d %d l %d %d %d %d %d %d{\\p0}",
+  if (count >= max_count) return count;
+  lines[count++] = formatf_alloc(
+      "0,0,AIRender,,0,0,0,,{\\3c&H%s&\\3a&H55&\\1a&HFF&\\bord%d}{\\pos(0,0)\\clip(%d,%d,%d,%d)}{\\p1} m %d %d l %d %d %d %d %d %d{\\p0}",
       color,
-      2,//boarder,
-      X0 - (boarder+2), Y1 - Hd, X0 + Wd, Y1 + (boarder+2),
-      X0, Y1 - (Hd+2), X0 + (Wd+2), Y1 - (Hd+2), X0 + (Wd+2), Y1, X0, Y1);
+      border,
+      X0 - (border+delta), Y1 - Hd, X0 + Wd, Y1 + (border+delta),
+      X0, Y1 - (Hd+delta), X0 + (Wd+delta), Y1 - (Hd+delta), X0 + (Wd+delta), Y1, X0, Y1);
 
       
   if (Y0 < 30) 
     Y0 += (30 - Y0);
 
   // label
-  ai_ass_add_eventf(ctx, ctx->track, det->label, start, duration,
-    "{\\pos(%d,%d)\\1a&H00&\\1c&HFFFFFF&\\4a&H66&\\4c&H%s&\\bord0}\\h{\\b%d}%s{\\b0} %.2f\\h", 
+  if (count >= max_count) return count;
+  lines[count++] = formatf_alloc(
+    "0,0,AIRender,,0,0,0,,{\\pos(%d,%d)\\1a&H00&\\1c&HFFFFFF&\\4a&H66&\\4c&H%s&\\bord0}\\h{\\b%d}%s{\\b0} %.2f\\h", 
       X0, Y0 - 25, color, bold ? 1:0, label_text, det->confidence);
 
-  return 1;
-}
-
-int ai_render_update_events_duration(
-  ai_renderer ctx,
-  long long pts)
-{
-  if (ctx->track->events) {
-    for (int n = 0; n < ctx->track->n_events; n++) {
-      ASS_Event *event = ctx->track->events + n;
-      if (/*event->Duration > 100000 && */ event->Start <= pts) {
-        event->Duration = pts - event->Start - 1;
-      }
-    }
-  }
-
-  return 0;
+  return count;
 }

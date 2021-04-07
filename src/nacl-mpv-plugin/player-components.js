@@ -1,6 +1,6 @@
 // nameing with postfix 'Plugin', to workaround test script without window.require
 const PlayerPlugin = require('./player')
-const { mime } = require('./index')
+const { mime: mimePlayer } = require('./index')
 
 function attrTrue (val) {
   return val === '' ||
@@ -12,9 +12,7 @@ class BasePlayerElement extends HTMLElement {
     super()
 
     const shadowRoot = this.attachShadow({mode: 'closed'});
-    shadowRoot.innerHTML = `
-    <embed id="player" type="${mime}" style="pointer-events:none; display: block; width: 100%; height: 100%" />
-    `
+    shadowRoot.innerHTML = this.constructor._innerHTML
 
     this._root = shadowRoot
 
@@ -138,16 +136,10 @@ class BasePlayerElement extends HTMLElement {
       this._root.appendChild(style);
       this._root.appendChild(loadingIcon);
 
-      this.addEventListener('start-file', () => {
-        loadingIcon.style.display = 'block'
-      })
-
-      this.addEventListener('end-file', () => {
-        loadingIcon.style.display = 'none'
-      })
-
-      this.addEventListener('file-loaded', () => {
-        loadingIcon.style.display = 'none'
+      this.addEventListener('prop-change', (name, value) => {
+        if (name === 'loading') {
+          loadingIcon.style.display = value ? 'block' : 'none'
+        }
       })
     }
   }
@@ -212,6 +204,12 @@ BasePlayerElement.prototype.addEventListener = function (type, listener, ...args
 }
 
 class PlayerElement extends BasePlayerElement {
+  static get _innerHTML () {
+    return `
+      <embed id="player" type="${mimePlayer}" style="pointer-events:none; display: block; width: 100%; height: 100%" />
+    `
+  }
+
   static _PluginClass = PlayerPlugin
 
   // Specify observed attributes so that
@@ -240,6 +238,11 @@ class PlayerElement extends BasePlayerElement {
     this.$player.option('osd-font-size', 30)
     this.$player.option('osd-duration', 2000)
     this.$player.option('screenshot-template', `pic-%tY%tm%td-%tH%tM-%ws`)
+
+    const logPath = this.getAttribute('debug-log')
+    if (logPath) {
+      this.$player.option('log-file', logPath)
+    }
   }
 
   _attributeChangedCallback (name, oldValue, newValue) {
@@ -363,6 +366,10 @@ class PlayerElement extends BasePlayerElement {
     if (args[0] === false) {
     } else {
       const {each, subtitles} = (args[0] || {})
+      if (each) {
+        const screenshotting = this.$player.props.screenshotting
+        this.$player.triggerProp('screenshotting', !screenshotting)
+      }
       this.$player.command('osd-auto', 'screenshot', (each ? 'each-frame+' : '') + (subtitles ? 'subtitles' : 'video'))
     }
   }
@@ -390,8 +397,9 @@ customElements.define('x-mpv', PlayerElement)
 
 /*
 ------------ local player -----------------
-<x-mpv
+<x-player
   src="string"
+  debug-log="string"
   hwaccel="string"
   locale="string"
   ai-switch="string array[a,b,c,...]"
@@ -405,7 +413,7 @@ customElements.define('x-mpv', PlayerElement)
   mute="boolean"
   show-loading="boolean" # persistant
 >
-</x-mpv>
+</x-player>
 
 [api]
 object.queryProperty(name) -> value or undefined
@@ -429,49 +437,4 @@ start-file: empty
 file-loaded: empty
 end-file: empty
 auth-require: (url)
-
------------- live player -----------------
-[api]
-object.queryProperty(name) -> value or undefined
-object.load(src, mode, options)
-object.reload()
-object.play()
-object.stop()
-object.screenshot({name, basePath, format, detection, maxCount, interval, scheduleType} | false)
-object.talk({encoding, sampleRate, bitRate} | false)
-object.record({name, basePath, limitBytes} | false)
-object.crop([x0, y0, x1, y1])
-
-[property set]
-object.fullscreen = boolean
-
-[events] object.addEventListener(event, listener)
-prop-change: (name, value)
- *name list
-   -  path
-   -  fileFormat
-   -  videoCodec
-   -  audioCodec
-   -  duration
-   -  timePos
-   -  fps
-   -  drops
-   -  fullscreen
-   -  screenshotting
-   -  talking
-   -  recording
-   -  idle
-   -  width
-   -  height
-   -  mute
-
-start-file: empty
-file-loaded: empty
-end-file: empty
-record-path: (path)
-error-msg: (msg)
-detection: ([detection objects])
-screenshot: ({path, success})
-auth-require: (url)
-
 */

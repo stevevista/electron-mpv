@@ -21,3 +21,4 @@ README.pdf
 .third-party
 *.lib
 ipc_channels.prod.json
+*.weights

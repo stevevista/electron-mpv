@@ -245,7 +245,6 @@ set(MPV_BASIC_SOURCES
   src/mpv/sub/ass_mp.c
   src/mpv/sub/osd.c
   src/mpv/sub/osd_libass.c
-  src/mpv/sub/sd_ass.c
   src/mpv/sub/dec_sub.c
   src/mpv/sub/img_convert.c
   src/mpv/sub/sd_lavc.c
@@ -315,6 +314,7 @@ set(MPV_BASIC_SOURCES
   src/mpv/video/out/gpu/libmpv_gpu.c
   src/mpv/video/out/opengl/libmpv_gl.c
   src/mpv/video/out/opengl/context.c
+  src/mpv/player/loadfile.c
   src/mpv/player/audio.c
   src/mpv/player/video.c
   src/mpv/player/client.c
@@ -328,12 +328,9 @@ set(MPV_BASIC_SOURCES
   src/mpv/player/configfiles.c
   src/mpv/player/external_files.c
   src/mpv/player/scripting.c
-  src/sd_ass_ai.c
+  src/mpv-patched/sub/sd_ass.c
   src/mpv-patched/stream/stream_lavf.c
-  src/mpv-patched/filters/f_decoder_wrapper.c
-  src/mpv-patched/player/loadfile.c)
-
-set_source_files_properties(src/mpv/sub/sd_ass.c PROPERTIES COMPILE_FLAGS /Dsd_ass=orgin_sd_ass)
+  src/mpv-patched/filters/f_decoder_wrapper.c)
 
 add_library(mpv_common_objs OBJECT ${MPV_BASIC_SOURCES})
 mpv_compile_definitions(mpv_common_objs)
@@ -367,6 +364,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR
 execute_process(COMMAND python "${MPV_SRC_PATH}/TOOLS/file2string.py" "${MPV_SRC_PATH}/etc/builtin.conf" OUTPUT_FILE "${PROJECT_BINARY_DIR}/generated/etc/builtin.conf.inc")
 execute_process(COMMAND python "${MPV_SRC_PATH}/TOOLS/file2string.py" "${MPV_SRC_PATH}/etc/input.conf" OUTPUT_FILE "${PROJECT_BINARY_DIR}/generated/etc/input.conf.inc")
 execute_process(COMMAND python "${MPV_SRC_PATH}/TOOLS/file2string.py" "${MPV_SRC_PATH}/sub/osd_font.otf" OUTPUT_FILE "${PROJECT_BINARY_DIR}/generated/sub/osd_font.otf.inc")
+execute_process(COMMAND python "${MPV_SRC_PATH}/TOOLS/matroska.py" "--generate-header" OUTPUT_FILE "${PROJECT_BINARY_DIR}/generated/ebml_types.h")
+execute_process(COMMAND python "${MPV_SRC_PATH}/TOOLS/matroska.py" "--generate-definitions" OUTPUT_FILE "${PROJECT_BINARY_DIR}/generated/ebml_defs_REAL.c")
 
 add_library(mpv-core SHARED 
   $<TARGET_OBJECTS:mpv_common_objs>

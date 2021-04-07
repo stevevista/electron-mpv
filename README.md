@@ -65,6 +65,9 @@ UNZIP PREBUILT LIBRARIES TO <SRC>/.third-party/prebuilt
 
 COPY OPENGL HEADERS TO <SRC>/.third-party/prebuilt/include
 
+Download yolov4-tiny.weights and put it in electron-mpv root directory
+
+
 
 ## YOLOv4:
 * **source code:** https://github.com/AlexeyAB/darknet

@@ -44,7 +44,7 @@
         :idle="idle"
         :pause="pause"
         :playlist="playlist"
-        :snapshotting="snapshotting"
+        :snapshotting="screenshotting"
         :timePos="timePos"
         :duration="duration"
         :isLive="isLive"
@@ -199,7 +199,7 @@ export default {
       dialogEffects: false,
       // player properties
       zooming: false,
-      snapshotting: false,
+      screenshotting: false,
       idle: true,
       pause: false,
       fullscreen: false,
@@ -306,11 +306,7 @@ export default {
       this.fps = 0
       this.drops = 0
     })
-
-    el.addEventListener('end-file', (e) => {
-      this.snapshotting = false
-    })
-
+  
     el.addEventListener('auth-require', (url, user, pass, cb) => {
       this.unauthed = true
 
@@ -330,6 +326,16 @@ export default {
     el.addEventListener('prop-change', (name, value) => {
       if (name === 'volume' || name === 'mute') {
         // prevent looping
+        return
+      }
+
+      if (name === 'track-list') {
+        for (const t of value) {
+          if (t.codec === 'eia_608') {
+            el.option('sid', t.id)
+            break
+          }
+        }
         return
       }
   
@@ -480,7 +486,6 @@ export default {
 
     async doMultiSreenshot () {
       if (await this.$store.ensureScreenshotDirectoryExists()) {
-        this.snapshotting = !this.snapshotting
         this.$player.screenshot({each: true, subtitles: this.$store.settings.screenshotWithAI})
       }
     },

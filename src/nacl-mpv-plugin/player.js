@@ -16,6 +16,8 @@ class MPVPlayer extends PluginBase {
     this.hooks = []; // array of callbacks, id is index+1
 
     this.props = {
+      loading: false,
+      screenshotting: false,
       fullscreen: false,
       mute: false,
       volume: 100,
@@ -93,7 +95,8 @@ class MPVPlayer extends PluginBase {
       'estimated-frame-count',
       'hwdec-current',
       'options/demuxer-lavf-hacks',
-      'options/demuxer-lavf-o' // {auth: user:pass}
+      'options/demuxer-lavf-o', // {auth: user:pass}
+      'track-list'
     ].forEach(name => {
       this.observe_property(name)
     });
@@ -106,8 +109,7 @@ class MPVPlayer extends PluginBase {
       if (cb) {
         cb(e.name, e.data);
       } else if (e.id === undefined) {
-        this.onPropertyChangeDefault(e.name, e.data)
-        this._on_prop(e.name, e.data)
+        this.triggerProp(e.name, e.data)
       }
     });
 
@@ -190,6 +192,26 @@ class MPVPlayer extends PluginBase {
 
       cont()
     })
+
+    // generate loading & screenshotting properties
+    this.register_event('start-file', () => {
+      this.triggerProp('loading', true)
+      this.triggerProp('screenshotting', false)
+    })
+
+    this.register_event('end-file', () => {
+      this.triggerProp('loading', false)
+      this.triggerProp('screenshotting', false)
+    })
+
+    this.register_event('file-loaded', () => {
+      this.triggerProp('loading', false)
+    })
+  }
+
+  triggerProp (name, value) {
+    this.onPropertyChangeDefault(name, value)
+    this._on_prop(name, value)
   }
 
   handleKeyDown (e) {
